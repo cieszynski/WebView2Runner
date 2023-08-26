@@ -2,29 +2,28 @@
 #include <wrl.h>        // CommandLineToArgvW
 
 #include "App.h"
+#include "AppWindow.h"
 
 HINSTANCE g_hInstance;
-static HWND g_hWnd;
 int g_nCmdShow;
+HWND g_hWnd;
 
-
-static Microsoft::WRL::ComPtr<ICoreWebView2> g_webview;
-static Microsoft::WRL::ComPtr<ICoreWebView2_3> g_webview3;
-static Microsoft::WRL::ComPtr<ICoreWebView2Controller> g_webViewController;
-static Microsoft::WRL::ComPtr<ICoreWebView2Environment> g_webViewEnvironment;
+/*
+Microsoft::WRL::ComPtr<ICoreWebView2> g_webview;
+Microsoft::WRL::ComPtr<ICoreWebView2_3> g_webview3;
+Microsoft::WRL::ComPtr<ICoreWebView2Controller> g_webViewController;
+Microsoft::WRL::ComPtr<ICoreWebView2Environment> g_webViewEnvironment;
 
 HRESULT OnCreateEnvironmentCompleted(HRESULT result, ICoreWebView2Environment* env);
 HRESULT OnCreateCoreWebView2ControllerCompleted(HRESULT result, ICoreWebView2Controller* controller);
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-
+*/
 int APIENTRY wWinMain(
     _In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
     _In_ LPWSTR    lpCmdLine,
     _In_ int       nCmdShow)
 {
-    g_hInstance = hInstance;
-    //g_nCmdShow = nCmdShow;
 
     LPWSTR* szArglist;
     int i, nArgs;
@@ -33,7 +32,7 @@ int APIENTRY wWinMain(
     szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
     if (NULL == szArglist)
     {
-        MessageBox(NULL, _T("CommandLineToArgvW failed\n"), _T("Error"), NULL);
+        MessageBox(nullptr, _T("CommandLineToArgvW failed\n"), _T("Error"), 0);
         return 0;
     }
 
@@ -43,6 +42,9 @@ int APIENTRY wWinMain(
 
     LocalFree(szArglist);
 
+	new AppWindow(hInstance, nCmdShow);
+
+	/*
 	TCHAR szTitle[256];                  // Titelleistentext
 	TCHAR szWindowClass[256];            // Der Klassenname des Hauptfensters.
 
@@ -68,10 +70,11 @@ int APIENTRY wWinMain(
 
 	if (!RegisterClassEx(&wcex))
 	{
-		MessageBox(NULL,
+		MessageBox(
+			nullptr,
 			_T("Call to RegisterClassEx failed!"),
 			_T("WebView2Runner"),
-			NULL);
+			0);
 
 	}
 
@@ -85,18 +88,21 @@ int APIENTRY wWinMain(
 		CW_USEDEFAULT,			// vertical position of window
 		CW_USEDEFAULT,			//  window width
 		CW_USEDEFAULT,			// window height
-		NULL,					// handle to parent or owner window
-		NULL,					// handle to menu, or child-window identifier
+		nullptr,				// handle to parent or owner window
+		nullptr,				// handle to menu, or child-window identifier
 		g_hInstance,			// handle to application instance
-		NULL					// pointer to window-creation data
+		nullptr					// pointer to window-creation data
 	);
+
 
 	if (!g_hWnd)
 	{
-		MessageBox(NULL,
+		MessageBox(
+			nullptr,
 			_T("Call to CreateWindow failed!"),
 			_T("WebView2Runner"),
-			NULL);
+			0);
+		return 0;
 	}
 
 	ShowWindow(g_hWnd, nCmdShow);
@@ -109,11 +115,12 @@ int APIENTRY wWinMain(
 		Microsoft::WRL::Callback<ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler>(
 			OnCreateEnvironmentCompleted
 		).Get());
+		*/
 
     MSG msg;
 
     // Main message loop:
-    while (GetMessage(&msg, NULL, 0, 0))
+    while (GetMessage(&msg, nullptr, 0, 0))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -121,14 +128,13 @@ int APIENTRY wWinMain(
 
     return (int)msg.wParam;
 }
-
+/*
 HRESULT OnCreateEnvironmentCompleted(HRESULT result, ICoreWebView2Environment* env)
 {
 	
-	env->CreateCoreWebView2Controller(g_hWnd, Microsoft::WRL::Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
+	return env->CreateCoreWebView2Controller(g_hWnd, Microsoft::WRL::Callback<ICoreWebView2CreateCoreWebView2ControllerCompletedHandler>(
 		OnCreateCoreWebView2ControllerCompleted
 	).Get());
-	return S_OK;
 }
 
 HRESULT OnCreateCoreWebView2ControllerCompleted(
@@ -153,14 +159,21 @@ HRESULT OnCreateCoreWebView2ControllerCompleted(
 	g_webview->Navigate(L"https://google.com");
 
 	return S_OK;
-}
+}*/
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
+	if (auto app = (AppWindow*)GetWindowLongPtr(hWnd, GWLP_USERDATA)) {
+		LRESULT result = 0;
+		
+		if (app->HandleWindowMessage(hWnd, message, wParam, lParam, &result)) {
+			return result;
+		}
+	}
 
 	switch (message)
-	{
+	{/*
 		case WM_SIZE:
 			if (g_webViewController != nullptr) {
 				RECT bounds;
@@ -168,7 +181,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				g_webViewController->put_Bounds(bounds);
 				return 1;
 			};
-			break;
+			break;*/
 		case WM_DESTROY:
 			PostQuitMessage(0);
 			break;
