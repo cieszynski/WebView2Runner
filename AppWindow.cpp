@@ -1,6 +1,9 @@
 #include "AppWindow.h"
 #include "App.h"
 
+//#include <WebView2EnvironmentOptions.h>
+#include "HostObject.h"
+
 AppWindow::AppWindow(HINSTANCE hInstance, int nCmdShow) {
 
 	TCHAR szTitle[256];                  // Titelleistentext
@@ -26,7 +29,14 @@ AppWindow::AppWindow(HINSTANCE hInstance, int nCmdShow) {
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, IDI_APPLICATION);
 
-	RegisterClassEx(&wcex);
+
+	if (!RegisterClassEx(&wcex))
+	{
+		MessageBox(NULL,
+			_T("Call to RegisterClassEx failed!"),
+			_T("Windows Desktop Guided Tour"),
+			MB_ICONERROR);
+	}
 
 	m_hWnd = CreateWindowEx(
 		// https://learn.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
@@ -91,13 +101,36 @@ HRESULT AppWindow::OnCreateCoreWebView2ControllerCompleted(
 #ifdef Debug
 	settings->put_AreDevToolsEnabled(TRUE);
 #endif
+	settings->put_AreDefaultContextMenusEnabled(FALSE);
+	settings->put_AreHostObjectsAllowed(TRUE);
+	//settings->put_AreDefaultScriptDialogsEnabled(FALSE);
+	
+	Microsoft::WRL::ComPtr<ICoreWebView2_3> webview3;
+	if (!m_webview->QueryInterface<ICoreWebView2_3>(&webview3))
+	{
+		webview3->SetVirtualHostNameToFolderMapping(L"assets", L"assets",
+			COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_DENY_CORS);
+	}
+
+	Microsoft::WRL::ComPtr<HostObject> m_hostObject;
+	m_hostObject = Microsoft::WRL::Make <HostObject>(
+		[](std::function<void(void)> callback) {}
+	);
+	m_hostObject->set_AppWindow(this);
+
+	VARIANT remoteObjectAsVariant = {};
+	m_hostObject->QueryInterface(IID_PPV_ARGS(&remoteObjectAsVariant.pdispVal));
+	remoteObjectAsVariant.vt = VT_DISPATCH;
+	m_webview->AddHostObjectToScript(L"runner", &remoteObjectAsVariant);
+	remoteObjectAsVariant.pdispVal->Release();
+
 
 	RECT bounds;
 	GetClientRect(m_hWnd, &bounds);
 	m_webViewController->put_Bounds(bounds);
 
-	m_webview->Navigate(L"https://google.com");
-
+	//m_webview->Navigate(L"https://google.com");
+	webview3->Navigate(L"https://assets/index.html");
 	return S_OK;
 }
 
