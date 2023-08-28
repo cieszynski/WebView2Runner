@@ -17,9 +17,9 @@ public:
     typedef std::function<void(void)> Callback;
     typedef std::function<void(Callback)> RunCallbackAsync;
 
+    HostObject();
+    HostObject(AppWindow *appWindow);
     HostObject(RunCallbackAsync runCallbackAsync);
-
-    void set_AppWindow(AppWindow *appWindow);
 
     STDMETHODIMP get_Property(BSTR* stringResult) override;
     STDMETHODIMP put_Property(BSTR stringValue) override;

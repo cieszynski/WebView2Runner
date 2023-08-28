@@ -1,12 +1,16 @@
 #include "HostObject.h"
 
-HostObject::HostObject(RunCallbackAsync runCallbackAsync)
+HostObject::HostObject()
 {
 }
 
-void HostObject::set_AppWindow(AppWindow *appWindow)
+HostObject::HostObject(AppWindow *appWindow)
 {
     m_appWindow = appWindow;
+}
+
+HostObject::HostObject(RunCallbackAsync runCallbackAsync)
+{
 }
 
 STDMETHODIMP_(HRESULT __stdcall) HostObject::get_Property(BSTR* stringResult)

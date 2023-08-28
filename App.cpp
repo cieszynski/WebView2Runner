@@ -1,8 +1,9 @@
 
 #include <wrl.h>        // CommandLineToArgvW
-
 #include "App.h"
 #include "AppWindow.h"
+#include "Utils.h"
+#include <filesystem>	// std::filesystem c++17
 
 int APIENTRY wWinMain(
     _In_ HINSTANCE hInstance,
@@ -10,25 +11,38 @@ int APIENTRY wWinMain(
     _In_ LPWSTR    lpCmdLine,
     _In_ int       nCmdShow)
 {
+	AppEnv appEnv;
 
-    LPWSTR* szArglist;
-    int i, nArgs;
+	appEnv.szURL = Utils::LoadStringFromResource(hInstance, IDS_APP_URL);
+	appEnv.szMODE = Utils::LoadStringFromResource(hInstance, IDS_APP_MODE);
+	appEnv.szUserDataFolder = std::filesystem::temp_directory_path().wstring();
 
-    // https://learn.microsoft.com/de-de/windows/win32/api/shellapi/nf-shellapi-commandlinetoargvw
-    szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
-    if (NULL == szArglist)
-    {
-        MessageBox(nullptr, _T("CommandLineToArgvW failed\n"), _T("Error"), 0);
-        return 0;
-    }
+	if (lpCmdLine && lpCmdLine[0]) {
+		int i, nArgs = 0;
+		LPWSTR* szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
 
-    for (i = 1; i < nArgs; i++) {
+		for (i = 1; i < nArgs; i++) {
+			if ((0 == lstrcmpW(szArglist[i], L"--url")) && (++i < nArgs)) {
+				appEnv.szURL = szArglist[i];
+			}
 
-    }
+			if ((0 == lstrcmpW(szArglist[i], L"--udf")) && (++i < nArgs)) {
+				appEnv.szUserDataFolder = szArglist[i];
+			}
 
-    LocalFree(szArglist);
+			if ((0 == lstrcmpW(szArglist[i], L"--mode")) && (++i < nArgs)) {
+				appEnv.szMODE = szArglist[i];
+			}
 
-	new AppWindow(hInstance, nCmdShow);
+			// if ((0 == lstrcmpW(szArglist[i], L"--options")) && (++i < nArgs)) {
+			// 	szUserDataFolder = szArglist[i];
+			// }
+		}
+
+		LocalFree(szArglist);
+	}
+
+	new AppWindow(hInstance, nCmdShow, appEnv);
 
 
     MSG msg;
