@@ -46,15 +46,16 @@ AppWindow::AppWindow(
 
 	// WindowStyles:
 	DWORD dwStyle = WS_OVERLAPPEDWINDOW;
-	DWORD dwExStyle = WS_EX_CLIENTEDGE;
+	DWORD dwExStyle = NULL;// WS_EX_CLIENTEDGE;
 	int w = CW_USEDEFAULT;
 	int h = CW_USEDEFAULT;
 
-	if (std::wstring::npos != m_appEnv.szMODE.find(L"topmost")) {
-		//dwExStyle = WS_EX_TOPMOST;
+	if (std::wstring::npos != m_appEnv.szMODE.find(L"kiosk")) {
+		dwExStyle = WS_EX_TOPMOST;
 	}
 
-	if (std::wstring::npos != m_appEnv.szMODE.find(L"fullscreen")) {
+	if ((std::wstring::npos != m_appEnv.szMODE.find(L"fullscreen"))
+		|| (std::wstring::npos != m_appEnv.szMODE.find(L"kiosk"))) {
 		dwStyle = WS_POPUP;
 		w = GetSystemMetrics(SM_CXSCREEN);
 		h = GetSystemMetrics(SM_CYSCREEN);
@@ -116,13 +117,13 @@ HRESULT AppWindow::OnCreateCoreWebView2ControllerCompleted(
 {
 	if (controller != nullptr) {
 		m_webViewController = controller;
-		m_webViewController->get_CoreWebView2(&m_webview);
+		m_webViewController->get_CoreWebView2(&m_webView);
 	}
 
 	Microsoft::WRL::ComPtr<ICoreWebView2Settings> settings;
-	m_webview->get_Settings(&settings);
+	m_webView->get_Settings(&settings);
 
-#ifdef Debug
+#ifdef _DEBUG
 	settings->put_AreDevToolsEnabled(TRUE);
 	settings->put_AreDefaultScriptDialogsEnabled(TRUE);
 #else
@@ -133,7 +134,7 @@ HRESULT AppWindow::OnCreateCoreWebView2ControllerCompleted(
 	settings->put_AreHostObjectsAllowed(TRUE);
 		
 	Microsoft::WRL::ComPtr<ICoreWebView2_3> webview3;
-	if (SUCCEEDED(m_webview->QueryInterface<ICoreWebView2_3>(&webview3)))
+	if (SUCCEEDED(m_webView->QueryInterface<ICoreWebView2_3>(&webview3)))
 	{
 		webview3->SetVirtualHostNameToFolderMapping(L"assets", L"assets",
 			COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_DENY_CORS);
@@ -145,15 +146,43 @@ HRESULT AppWindow::OnCreateCoreWebView2ControllerCompleted(
 	VARIANT remoteObjectAsVariant = {};
 	m_hostObject->QueryInterface(IID_PPV_ARGS(&remoteObjectAsVariant.pdispVal));
 	remoteObjectAsVariant.vt = VT_DISPATCH;
-	m_webview->AddHostObjectToScript(L"runner", &remoteObjectAsVariant);
+	m_webView->AddHostObjectToScript(L"runner", &remoteObjectAsVariant);
 	remoteObjectAsVariant.pdispVal->Release();
-
 
 	RECT bounds;
 	GetClientRect(m_hWnd, &bounds);
 	m_webViewController->put_Bounds(bounds);
 
-	return m_webview->AddScriptToExecuteOnDocumentCreated(L"window.bla = {a:1,b:2};", 
+	EventRegistrationToken token;
+	m_webView->add_DocumentTitleChanged(
+		Microsoft::WRL::Callback<ICoreWebView2DocumentTitleChangedEventHandler>(
+			[this](ICoreWebView2* webview, IUnknown* args) -> HRESULT {
+				LPWSTR title;
+				webview->get_DocumentTitle(&title);
+				SetWindowTextW(m_hWnd, title);
+				return S_OK;
+			}).Get(), &token);
+
+	m_webView->add_WindowCloseRequested(
+		Microsoft::WRL::Callback<ICoreWebView2WindowCloseRequestedEventHandler>(
+			[this](ICoreWebView2* webview, IUnknown* args) {
+				DestroyWindow(m_hWnd);
+				return S_OK;
+			}).Get(), &token);
+
+	m_webView->add_ContainsFullScreenElementChanged(
+		Microsoft::WRL::Callback <ICoreWebView2ContainsFullScreenElementChangedEventHandler>(
+			[this](ICoreWebView2* webview, IUnknown* args) {
+				BOOL containsFullScreenElement;
+				webview->get_ContainsFullScreenElement(&containsFullScreenElement);
+				SetFullscreen(containsFullScreenElement);
+
+				return S_OK;
+			}).Get(), &token);
+
+	std::wstring script = Utils::LoadStringFromResource(NULL, IDS_APP_SCRIPT);
+
+	return m_webView->AddScriptToExecuteOnDocumentCreated(script.c_str(),
 		Microsoft::WRL::Callback<ICoreWebView2AddScriptToExecuteOnDocumentCreatedCompletedHandler>(
 			this, &AppWindow::OnAddScriptToExecuteOnDocumentCreatedCompleted
 	).Get());	
@@ -161,7 +190,31 @@ HRESULT AppWindow::OnCreateCoreWebView2ControllerCompleted(
 
 HRESULT AppWindow::OnAddScriptToExecuteOnDocumentCreatedCompleted(HRESULT errorCode, LPCWSTR id)
 {
-	return m_webview->Navigate(m_appEnv.szURL.c_str());
+#ifdef _DEBUG
+	m_webView->OpenDevToolsWindow();
+#endif
+	return m_webView->Navigate(m_appEnv.szURL.c_str());
+}
+
+void AppWindow::SetFullscreen(BOOL boolValue)
+{
+	// In kiosk mode toggle fullscreen is not allowed
+	if (std::wstring::npos != m_appEnv.szMODE.find(L"kiosk")) {
+		return;
+	}
+
+	if (!boolValue)
+	{
+		SetWindowLongPtr(m_hWnd, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
+		SetWindowPos(m_hWnd, NULL, 0, 0, 600, 400, SWP_FRAMECHANGED);
+	}
+	else
+	{
+		int w = GetSystemMetrics(SM_CXSCREEN);
+		int h = GetSystemMetrics(SM_CYSCREEN);
+		SetWindowLongPtr(m_hWnd, GWL_STYLE, WS_VISIBLE | WS_POPUP);
+		SetWindowPos(m_hWnd, HWND_TOP, 0, 0, w, h, SWP_FRAMECHANGED);
+	}
 }
 
 bool AppWindow::HandleWindowMessage(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* result)
@@ -169,31 +222,20 @@ bool AppWindow::HandleWindowMessage(HWND hWnd, UINT message, WPARAM wParam, LPAR
 	switch (message)
 	{
 		case WM_KEYDOWN:
+			/*
 			if (wParam == VK_F11) {
-				if (std::wstring::npos != m_appEnv.szMODE.find(L"fullscreen")) {
-					return true;
-				}
-				//Toggle fullscreen
-				if (GetWindowLongPtr(hWnd, GWL_STYLE) & WS_POPUP)
-				{
-					SetWindowLongPtr(hWnd, GWL_STYLE, WS_VISIBLE | WS_OVERLAPPEDWINDOW);
-					SetWindowPos(hWnd, NULL, 0, 0, 600, 400, SWP_FRAMECHANGED);
-				}
-				else
-				{
-					int w = GetSystemMetrics(SM_CXSCREEN);
-					int h = GetSystemMetrics(SM_CYSCREEN);
-					SetWindowLongPtr(hWnd, GWL_STYLE, WS_VISIBLE | WS_POPUP);
-					SetWindowPos(hWnd, HWND_TOP, 0, 0, w, h, SWP_FRAMECHANGED);
-				}
+				SetFullscreen(GetWindowLongPtr(hWnd, GWL_STYLE) & WS_OVERLAPPEDWINDOW);
+
 				return true;
 			}
+			*/
 			break;
 		case WM_SIZE:
 			if (m_webViewController != nullptr) {
 				RECT bounds;
 				GetClientRect(hWnd, &bounds);
 				m_webViewController->put_Bounds(bounds);
+
 				return true;
 			};
 			break;

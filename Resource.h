@@ -10,6 +10,7 @@
 #define IDS_APP_URL                     104
 #define IDM_EXIT                        105
 #define IDS_APP_MODE                    105
+#define IDS_APP_SCRIPT                  106
 #define IDI_WEBVIEW2RUNNER              107
 #define IDI_SMALL                       108
 #define IDC_WEBVIEW2RUNNER              109

@@ -31,6 +31,13 @@ STDMETHODIMP_(HRESULT __stdcall) HostObject::put_Property(BSTR stringValue)
     return S_OK;
 }
 
+STDMETHODIMP_(HRESULT __stdcall) HostObject::put_Fullscreen(BOOL boolValue)
+{
+    m_appWindow->SetFullscreen(boolValue);
+
+    return S_OK;
+}
+
 // IDispatch implementation
 STDMETHODIMP HostObject::GetTypeInfoCount(UINT* pctinfo)
 {

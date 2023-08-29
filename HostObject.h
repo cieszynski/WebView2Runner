@@ -24,6 +24,8 @@ public:
     STDMETHODIMP get_Property(BSTR* stringResult) override;
     STDMETHODIMP put_Property(BSTR stringValue) override;
 
+    STDMETHODIMP put_Fullscreen(BOOL boolValue) override;
+
     // IDispatch implementation
     STDMETHODIMP GetTypeInfoCount(UINT* pctinfo) override;
 
