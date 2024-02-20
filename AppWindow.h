@@ -7,8 +7,7 @@
 class AppWindow
 {
 public:
-	AppWindow(
-		HINSTANCE hInstance, int nCmdShow, AppEnv appEnv);
+	AppWindow(HINSTANCE hInstance, int nCmdShow, AppEnv appEnv);
 	void SetFullscreen(BOOL boolValue);
 	bool HandleWindowMessage(
 		HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* result);

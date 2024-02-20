@@ -39,7 +39,7 @@ AppWindow::AppWindow(
 	{
 		MessageBox(NULL,
 			_T("Call to RegisterClassEx failed!"),
-			_T("Windows Desktop Guided Tour"),
+			_T("WebView2Runner"),
 			MB_ICONERROR);
 	}
 

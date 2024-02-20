@@ -5,6 +5,8 @@ VisualStudioVersion = 17.7.34009.444
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WebView2Runner", "WebView2Runner.vcxproj", "{3F0C6EB4-018F-4314-9C7D-6D04C89C3E29}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "WebView2RunnerSetup", "..\WebView2RunnerSetup\WebView2RunnerSetup.vdproj", "{A534268C-FA26-49A4-98C3-D02CA1BB3439}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,11 @@ Global
 		{3F0C6EB4-018F-4314-9C7D-6D04C89C3E29}.Release|x64.Build.0 = Release|x64
 		{3F0C6EB4-018F-4314-9C7D-6D04C89C3E29}.Release|x86.ActiveCfg = Release|Win32
 		{3F0C6EB4-018F-4314-9C7D-6D04C89C3E29}.Release|x86.Build.0 = Release|Win32
+		{A534268C-FA26-49A4-98C3-D02CA1BB3439}.Debug|x64.ActiveCfg = Debug
+		{A534268C-FA26-49A4-98C3-D02CA1BB3439}.Debug|x86.ActiveCfg = Debug
+		{A534268C-FA26-49A4-98C3-D02CA1BB3439}.Release|x64.ActiveCfg = Release
+		{A534268C-FA26-49A4-98C3-D02CA1BB3439}.Release|x64.Build.0 = Release
+		{A534268C-FA26-49A4-98C3-D02CA1BB3439}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

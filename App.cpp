@@ -5,6 +5,8 @@
 #include "Utils.h"
 #include <filesystem>	// std::filesystem c++17
 
+HHOOK hKeyboardHook;
+
 int APIENTRY wWinMain(
     _In_ HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
@@ -42,6 +44,9 @@ int APIENTRY wWinMain(
 		LocalFree(szArglist);
 	}
 
+
+	hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInstance, 0);
+
 	new AppWindow(hInstance, nCmdShow, appEnv);
 
 
@@ -53,6 +58,8 @@ int APIENTRY wWinMain(
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+
+	UnhookWindowsHookEx(hKeyboardHook);
 
     return (int)msg.wParam;
 }
@@ -84,4 +91,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 
 	return 0;
+}
+
+// keyboard hook proc
+// prevent screenshots like ALT+PRINT/WINKEY+PRINT/WINKEY+SHIFT+S
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	KBDLLHOOKSTRUCT* p = (KBDLLHOOKSTRUCT*)lParam;
+
+	if (p->vkCode == VK_RWIN || p->vkCode == VK_LWIN) return 1; // disable windows key
+	if (p->vkCode == VK_PRINT || p->vkCode == VK_SNAPSHOT) return 1; // disable print/snapshot
+	
+	CallNextHookEx(hKeyboardHook, nCode, wParam, lParam);
 }
